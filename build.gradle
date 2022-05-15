@@ -1,5 +1,6 @@
 plugins {
     id "org.jetbrains.kotlin.jvm" version "1.6.10"
+    id "jacoco"
 }
 
 group "io.javalin.plugin.redis"
@@ -14,19 +15,46 @@ test {
 }
 
 dependencies {
+    // Javalin
     api group: "io.javalin", name: "javalin", version: "4.5.0"
-    api group: "com.nixxcode.jvmbrotli", name: "jvmbrotli", version: "0.2.0"
-    api group: "com.nixxcode.jvmbrotli", name: "jvmbrotli-win32-x86-amd64", version: "0.2.0"
 
+    // Compression
+    implementation group: "com.nixxcode.jvmbrotli", name: "jvmbrotli", version: "0.2.0"
+    implementation group: "org.lz4", name: "lz4-java", version: "1.8.0"
+    implementation group: "org.xerial.snappy", name: "snappy-java", version: "1.1.8.4"
+
+    // Redis
     implementation group: "io.lettuce", name: "lettuce-core", version: "6.1.8.RELEASE"
+
+    // Bson
     implementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: "2.13.2.2"
     implementation group: "de.undercouch", name: "bson4jackson", version: "2.13.1"
+
+    // Kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
 
+    // Test
     testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
     testImplementation "com.github.kstyrc:embedded-redis:0.6"
     testImplementation "io.javalin:javalin-testtools:4.5.0"
     testImplementation group: "org.slf4j", name: "slf4j-simple", version: "1.7.31"
     testImplementation "org.assertj:assertj-core:3.22.0"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.8.2"
+}
+
+task codeCoverageReport(type: JacocoReport) {
+    executionData fileTree(project.rootDir.absolutePath).include("build/jacoco/*.exec")
+
+    sourceSets sourceSets.main
+
+    reports {
+        xml.enabled true
+        xml.destination file("${buildDir}/reports/jacoco/report.xml")
+        html.enabled false
+        csv.enabled false
+    }
+
+    dependsOn {
+        test
+    }
 }

@@ -4,6 +4,12 @@ import com.nixxcode.jvmbrotli.common.BrotliLoader
 import com.nixxcode.jvmbrotli.dec.BrotliInputStream
 import com.nixxcode.jvmbrotli.enc.BrotliOutputStream
 import io.lettuce.core.codec.RedisCodec
+import net.jpountz.lz4.LZ4BlockInputStream
+import net.jpountz.lz4.LZ4BlockOutputStream
+import net.jpountz.lz4.LZ4FrameInputStream
+import net.jpountz.lz4.LZ4FrameOutputStream
+import org.xerial.snappy.SnappyFramedInputStream
+import org.xerial.snappy.SnappyFramedOutputStream
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -22,10 +28,9 @@ class AdvancedCompressionCodec(
     val compressions: List<CompressionType> = listOfNotNull(
         CompressionType.NONE,
         CompressionType.DEFLATE,
-        CompressionType.GZIP,
-        if (BrotliLoader.isBrotliAvailable()) CompressionType.BROTLI else null
+        if (BrotliLoader.isBrotliAvailable()) CompressionType.BROTLI else CompressionType.GZIP
     ),
-    val minCompressionRatio: Float = 0.8F, // 80% of the original size
+    val minCompressionRatio: Long = 80_00L, // 80% of the original size
     val minPayloadBytes: Long = 128L, // 128B
 ) : RedisCodec<ByteBuffer, ByteBuffer?> {
     init {
@@ -47,7 +52,9 @@ class AdvancedCompressionCodec(
             return value
         }
 
-        val byteArray: ByteArray = if (value.remaining() >= minPayloadBytes) {
+        val originalSize = value.remaining()
+        val maximalSize: Long = originalSize * minCompressionRatio / 10_000
+        val byteArray: ByteArray = if (originalSize >= minPayloadBytes) {
             this.compressions
         } else {
             listOf(CompressionType.NONE)
@@ -61,7 +68,7 @@ class AdvancedCompressionCodec(
             outputStream.close()
             byteArray
         }.reduce { acc, bytes ->
-            if (acc.size <= bytes.size) {
+            if (acc.size <= bytes.size || bytes.size >= maximalSize) {
                 acc
             } else {
                 bytes
@@ -108,9 +115,16 @@ class CompressionType(
     val inputStream: (InputStream) -> InputStream
 ) {
     companion object {
-        val NONE = CompressionType(0x0, { it }, { it })
-        val DEFLATE = CompressionType(0x1, ::DeflaterOutputStream, ::InflaterInputStream)
-        val GZIP = CompressionType(0x2, ::GZIPOutputStream, ::GZIPInputStream)
-        val BROTLI = CompressionType(0x3, ::BrotliOutputStream, ::BrotliInputStream)
+        val NONE: CompressionType = CompressionType(0x0, { it }, { it })
+        val DEFLATE: CompressionType = CompressionType(0x1, ::DeflaterOutputStream, ::InflaterInputStream)
+        val GZIP: CompressionType = CompressionType(0x2, ::GZIPOutputStream, ::GZIPInputStream)
+        val BROTLI: CompressionType? = CompressionType(
+            0x3,
+            ::BrotliOutputStream,
+            ::BrotliInputStream
+        )
+        val LZ4FRAME: CompressionType? = CompressionType(0x4, ::LZ4FrameOutputStream, ::LZ4FrameInputStream)
+        val LZ4BLOCK: CompressionType? = CompressionType(0x5, ::LZ4BlockOutputStream, ::LZ4BlockInputStream)
+        val SNAPPY: CompressionType? = CompressionType(0x6, ::SnappyFramedOutputStream, ::SnappyFramedInputStream)
     }
 }
