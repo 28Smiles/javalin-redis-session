@@ -1,6 +1,7 @@
 plugins {
     id "org.jetbrains.kotlin.jvm" version "1.6.10"
     id "jacoco"
+    id "maven-publish"
 }
 
 group "io.javalin.plugin.redis"
@@ -56,5 +57,16 @@ task codeCoverageReport(type: JacocoReport) {
 
     dependsOn {
         test
+    }
+}
+
+publishing {
+    maven {
+        name = "GitHubPackages"
+        url = "https://maven.pkg.github.com/28Smiles/javalin-redis-session"
+        credentials {
+            username = System.getenv("GITHUB_ACTOR")
+            password = System.getenv("GITHUB_TOKEN")
+        }
     }
 }
