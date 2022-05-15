@@ -1,10 +1,13 @@
 package io.javalin.plugin.redis
 
+import io.github.cdimascio.dotenv.Dotenv
 import io.javalin.Javalin
 import io.javalin.testtools.TestUtil
 import io.lettuce.core.RedisURI
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.Duration
 import java.util.UUID
@@ -16,16 +19,31 @@ data class TestCookie(val uuid: UUID = UUID.randomUUID())
  * @since 11.05.2022
  */
 class ContextExtensionsTest {
-    @Test
-    fun testRedisSync() {
-        val app = Javalin.create {
+    lateinit var app: Javalin
+
+    @BeforeEach
+    fun setupJavalin() {
+        val dotenv = Dotenv.load()
+        app = Javalin.create {
             it.registerPlugin(RedisPlugin(RedisOptions().uri(
-                RedisURI("localhost", 6379, Duration.ofSeconds(2))
+                RedisURI(
+                    dotenv.get("REDIS_HOST", "localost"),
+                    dotenv.get("REDIS_PORT", "6379").toInt(),
+                    Duration.ofSeconds(2)
+                )
             )))
         }.exception(java.lang.Exception::class.java) { error, _ ->
             error.printStackTrace()
         }
+    }
 
+    @AfterEach
+    fun teardownJavalin() {
+        app.stop()
+    }
+
+    @Test
+    fun testRedisSync() {
         val refCookie = TestCookie()
         app.get("login") { ctx ->
             ctx.session(refCookie)

@@ -34,12 +34,12 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
 
     // Test
-    testImplementation "org.junit.jupiter:junit-jupiter:5.8.2"
-    testImplementation "com.github.kstyrc:embedded-redis:0.6"
-    testImplementation "io.javalin:javalin-testtools:4.5.0"
+    testImplementation group: "io.github.cdimascio", name: "dotenv-kotlin", version: "6.2.2"
+    testImplementation group: "org.junit.jupiter", name: "junit-jupiter", version: "5.8.2"
+    testImplementation group: "io.javalin", name: "javalin-testtools", version: "4.5.0"
     testImplementation group: "org.slf4j", name: "slf4j-simple", version: "1.7.31"
-    testImplementation "org.assertj:assertj-core:3.22.0"
-    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:5.8.2"
+    testImplementation group: "org.assertj", name: "assertj-core", version: "3.22.0"
+    testRuntimeOnly group: "org.junit.jupiter", name: "junit-jupiter-engine", version: "5.8.2"
 }
 
 task codeCoverageReport(type: JacocoReport) {
