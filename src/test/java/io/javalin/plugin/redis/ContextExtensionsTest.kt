@@ -23,11 +23,11 @@ class ContextExtensionsTest {
 
     @BeforeEach
     fun setupJavalin() {
-        val dotenv = Dotenv.load()
+        val dotenv = Dotenv.configure().ignoreIfMissing().load()
         app = Javalin.create {
             it.registerPlugin(RedisPlugin(RedisOptions().uri(
                 RedisURI(
-                    dotenv.get("REDIS_HOST", "localost"),
+                    dotenv.get("REDIS_HOST", "localhost"),
                     dotenv.get("REDIS_PORT", "6379").toInt(),
                     Duration.ofSeconds(2)
                 )
